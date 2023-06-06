@@ -16,6 +16,15 @@ ENV GO111MODULE=on \
 
 WORKDIR /build
 
+RUN \ 
+  case ${TARGETPLATFORM} in \
+    "linux/amd64") DOWNLOAD_ARCH="linux-amd64"  ;; \
+    "linux/arm64") DOWNLOAD_ARCH="linux-arm64"  ;; \
+  esac && \
+  wget https://github.com/mvdkleijn/healthchecker/releases/download/v1.0.2/healthchecker-${DOWNLOAD_ARCH} && \
+  mv /build/healthchecker-${DOWNLOAD_ARCH} /build/healthchecker && \
+  chmod 755 /build/healthchecker
+
 COPY . .
 
 RUN go mod download
@@ -29,7 +38,7 @@ RUN go build -ldflags="-w -s" -o app .
 FROM --platform=${TARGETPLATFORM:-linux/arm64} gcr.io/distroless/static-debian11:nonroot
 
 COPY --from=builder /build/app /
-ADD --chmod=755 https://github.com/mvdkleijn/healthchecker/releases/download/v1.0.2/healthchecker-${TARGETOS}-${TARGETARCH} /healthchecker
+COPY --from=builder /build/healthchecker /healthchecker
 
 EXPOSE 8080
 
