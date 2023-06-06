@@ -1,0 +1,37 @@
+name: Test and coverage report
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+    
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+
+      - name: Install dependencies
+        run: go get .
+    
+      - name: Build
+        run: go build -v ./...
+        
+      - name: Test
+        run: go test -v -coverprofile=./coverage.out ./...
+        
+      # - name: Codacy Coverage Reporter
+      #   uses: codacy/codacy-coverage-reporter-action@v1
+      #   with:
+      #     project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      #     coverage-reports: ./coverage.out
+      #     language: go
+      #     force-coverage-parser: go
