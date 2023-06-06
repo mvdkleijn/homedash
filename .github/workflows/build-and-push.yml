@@ -37,7 +37,6 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            name=mvdkleijn/homedash
             name=ghcr.io/mvdkleijn/homedash,enable=true
           tags: |
             type=semver,pattern={{version}}
