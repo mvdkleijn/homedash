@@ -1,0 +1,149 @@
+openapi: 3.0.3
+
+info:
+  title: HomeDash server
+  description: |-
+    The HomeDash application consists of two parts, a sidecar application and
+    the server to which it reports. This is the documentation for the server API.
+  contact:
+    name: Chaosmonkey
+    email: github@vanderkleijn.net
+    url: http://github.com/mvdkleijn/homedash
+  license:
+    name: Mozilla Public License v2
+    url: http://mozilla.org/MPL/2.0/
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+
+paths:
+  /applications:
+    get:
+      tags:
+        - application
+      summary: Retrieve all applications
+      description: Returns all applications known to HomeDash.
+      operationId: getApplications
+      responses:
+        '200':
+          description: Successful operation
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/responses/ApplicationsList'
+              examples:
+                List of applications:
+                  $ref: '#/components/examples/fullApplicationList'
+                Empty List:
+                  $ref: '#/components/examples/emptyList'
+        
+    post:
+      tags:
+        - application
+      summary: Add a new application to HomeDash
+      description: Add a new application to HomeDash
+      operationId: addApplication
+      requestBody:
+        description: Create a new application in HomeDash
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SidecarUpdate'
+        required: true
+      responses:
+        '201':
+          description: Application was added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SidecarUpdate'          
+        '400':
+          description: Bad request. The input could not be understood by the server.
+        '422':
+          description: Missing uuid in payload. The sidecar application should add a UUIDv4 (generated on startup) to the payload.
+
+  /sidecars:
+    get:
+      tags:
+        - sidecar
+      summary: Retrieve all sidecar uuids
+      description: Returns all sidecar uuids known to HomeDash.
+      operationId: getSidecars
+      responses:
+        '200':
+          description: Successful operation
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/responses/SidecarsList'
+              examples:
+                List of sidecars:
+                  $ref: '#/components/examples/sidecarsList'
+                Empty List:
+                  $ref: '#/components/examples/emptyList'
+
+components:
+  responses:
+    ApplicationsList:
+      description: A complex object array response
+      content: 
+        application/json:
+          schema: 
+            type: array
+            items:
+              $ref: '#/components/schemas/Application'
+    SidecarsList:
+      description: A complex object array response
+      content: 
+        application/json:
+          schema: 
+            type: array
+            items:
+              $ref: '#/components/schemas/Sidecar'
+
+  schemas:
+    Application:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Gitea
+        url:
+          type: string
+          example: http://gitea.home.arpa
+        icon:
+          type: string
+          example: gitea
+        comment:
+          type: string
+          example: This is my Gitea instance
+    Sidecar:
+      type: string
+      example: 14a107d2-db4b-4419-a7fe-f1499ad02ee7
+    SidecarUpdate:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: 14a107d2-db4b-4419-a7fe-f1499ad02ee7
+        containers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Application'
+
+  examples:
+    fullApplicationList:
+      summary: List of applications
+      description: An example of a list of applications, in this case "Gitea" and "Drone".
+      value: [
+               {"name": "Gitea", "url": "http://gitea.home.arpa", "icon": "gitea", "comment": "This is my Gitea instance"},
+               {"name": "Drone", "url": "http://drone.home.arpa", "icon": "drone", "comment": ""}
+             ]
+    emptyList:
+      summary: An empty list
+      value: []
+    sidecarsList:
+      summary: List of sidecars
+      description: An example of a list of sidecars.
+      value: [ "14a107d2-db4b-4419-a7fe-f1499ad02ee7", "1984dbf6-55d2-4819-b35b-db0c5bf83ef9" ]

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Copyright (C) 2023  Martijn van der Kleijn - This file is part of HomeDash.
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+  	License, v. 2.0. If a copy of the MPL was not distributed with this
+  	file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    -->
+    <meta charset="UTF-8">
+    <title>My Home Dashboard</title>
+    <script src="/static/vue.min.js"></script>
+    <style>
+        :root {
+            --clr-dark: #0f172a;
+            --clr-light: #f1f5f9;
+            --clr-accent: #e11d48;
+            --clr-back-grd-top: #87608c;
+            --clr-back-grd-bottom: #b95677;
+            --clr-item-left: #0044aa;
+            --clr-item-right: #222222;
+            --fnt-base: 'Roboto', sans-serif;
+            --clr-item-text: #fff;
+            --clr-item-border: #ccc;
+            --clr-item-shadow: #000;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background-image: linear-gradient(to bottom, var(--clr-back-grd-top), var(--clr-back-grd-bottom));
+            height: 100svh;
+            background-attachment: fixed;
+            background-size: cover;
+            display: flex;
+        }
+
+        body {
+            font-family: var(--fnt-base);
+            color: var(--clr-dark);
+            display: flex;
+        }
+
+        #app {
+            width: 100%;
+            display: flex;
+            justify-content: space-evenly;
+            padding: 2em;
+            flex-wrap: wrap;
+            align-content: center;
+            gap: 2em;
+        }
+
+        .item>a {
+            background: linear-gradient(to right, var(--clr-item-left), var(--clr-item-right));
+            width: 250px;
+            height: 88px;
+            color: var(--clr-item-text);
+            border-radius: 6px;
+            border: 1px solid var(--clr-item-border);
+            box-shadow: 0px 0px 5px var(--clr-item-shadow);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0em 1em;
+        }
+
+        .logo {
+            min-height: 64px;
+            min-width: 64px;
+            margin-right: 0.5em;
+        }
+
+        .logo img {
+            width: 64px;
+            height: 64px;
+        }
+
+        .item>a>.details {
+            flex-grow: 1;
+        }
+
+        .details h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+
+        .details p {
+            margin: 10px 0 0 0;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+
+<body>
+    <template id="my-component">
+        <div class="item">
+            <a :href="url">
+                <div class="logo"><img :src="icon" alt="Icon"></div>
+                <div class="details">
+                    <h2>{{ name }}</h2>
+                    <p v-if="comment">{{ comment }}</p>
+                </div>
+            </a>
+        </div>
+    </template>
+
+    <div id="app">
+        <p v-if="noContainers" style="color: white;">No containers found.</p>
+    </div>
+
+    <script>
+        Vue.component('my-component', {
+            props: ['name', 'url', 'icon', 'comment'],
+            template: '#my-component'
+        })
+
+        new Vue({
+            el: '#app',
+            data: {
+                noContainers: false
+            },
+            created: function () {
+                fetch('/api/v1/applications')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data || data.length === 0) {
+                            this.noContainers = true;
+                            return;
+                        }
+                        for (let item of data) {
+                            const myComponent = new Vue({
+                                render: h => h('my-component', {
+                                    props: {
+                                        name: item.name,
+                                        icon: "https://cdn.simpleicons.org/" + item.icon + "/ffffff",
+                                        url: item.url,
+                                        comment: item.comment
+                                    }
+                                })
+                            })
+
+                            this.$el.appendChild(myComponent.$mount().$el)
+                        }
+                    })
+                    .catch(error => console.error(error))
+            }
+        })
+    </script>
+
+</body>
+
+</html>

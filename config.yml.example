@@ -1,0 +1,18 @@
+# Configuration file for HomeDash
+debug: false
+maxage: "20"
+cleaninterval: "1"
+
+server:
+    address: ""
+    port: "8080"
+
+cors:
+    allowcredentials: false
+    allowedheaders: Content-Type
+    allowedmethods:
+        - GET
+        - POST
+        - HEAD
+    allowedorigins: '*'
+    debug: false
