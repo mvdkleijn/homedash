@@ -43,4 +43,4 @@ jobs:
           files: ./homedash-*
           append_body: true
           body: |
-            The container image for this release is available from ghcr.io/mvdkleijn/homedash
+            The container image for this release is available from https://ghcr.io/mvdkleijn/homedash
