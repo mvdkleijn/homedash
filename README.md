@@ -22,12 +22,15 @@ Features include:
 
 Keep in mind that this is intended for local usage, so there are no provisions for authentication, etc.
 
-## Support
+## Usage
 
-Supported Go versions, see: https://endoflife.date/go
-Supported architectures: amd64, arm64
+1) Start HomeDash by either running the container or just starting the binary;
+2) Feed your HomeDash installation using either:
+   - the [sidecar application](https://github.com/mvdkleijn/homedash-sidecar) or;
+   - the REST API, see http://localhost:8080/static/docs/ for details.
+3) Go to http://localhost:8080/ to view the dashboard. (or whatever URL you host it on)
 
-Source code and issues: https://github.com/mvdkleijn/homedash
+An example docker-compose.yml file is included in the root of this git repository. The example assumes you use Traefik and something like https://github.com/tecnativa/docker-socket-proxy so adjust where needed for your situation.
 
 ## Configuration
 
@@ -72,12 +75,12 @@ All environment variables **must** be prefixed by "HOMEDASH_".
 | CORS_ALLOWEDORIGINS   | cors: allowedorigins:   | Origins of requests allowed by CORS                 | "*"                   |
 | CORS_ALLOWCREDENTIALS | cors: allowcredentials: | Allow user credentials as part of request to server | false                 |
 
-## Usage
+## Support
 
-1) Feed your HomeDash installation using either:
-   - the [sidecar application](https://github.com/mvdkleijn/homedash-sidecar) or;
-   - the REST API, see http://localhost:8080/static/docs/ for details.
-2) Go to http://localhost:8080/ to view the dashboard. (or whatever URL you host it on)
+Supported Go versions, see: https://endoflife.date/go
+Supported architectures: amd64, arm64
+
+Source code and issues: https://github.com/mvdkleijn/homedash
 
 ## Licensing
 

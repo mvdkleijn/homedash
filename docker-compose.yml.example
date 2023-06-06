@@ -1,0 +1,42 @@
+version: "3"
+
+networks:
+  traefik:
+    external: true
+
+services:
+  server:
+    image: ghcr.io/mvdkleijn/homedash:latest
+    container_name: homedash
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    restart: always
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homedash.entrypoints=web"
+      - "traefik.http.routers.homedash.rule=Host(`dash.example.com`)"
+      - "traefik.http.services.homedash.loadbalancer.server.port=8080"
+      - "homedash.name=HomeDash"
+      - "homedash.url=https://dash.example.com"
+      - "homedash.icon=homedash"
+
+  sidecar:
+    image: ghcr.io/mvdkleijn/homedash-sidecar:latest
+    container_name: homedash-sidecar
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - HOMEDASH_SERVER=http://dash.example.com
+      - DOCKER_HOST=http://host.docker.internal:2375
+    restart: always
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "traefik.enable=false"
+    depends_on:
+      server:
+        condition: service_healthy
