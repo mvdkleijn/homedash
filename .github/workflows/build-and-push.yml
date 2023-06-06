@@ -49,6 +49,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
             context: .
+            push: true
             platforms: linux/amd64,linux/arm64
             tags: ${{ steps.homedash-meta.outputs.tags }}
             labels: ${{ steps.homedash-meta.outputs.labels }}
