@@ -1,7 +1,7 @@
 # HomeDash
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/mvdkleijn/homedash?style=for-the-badge)
-[![Codacy grade](https://img.shields.io/codacy/grade/9c0908fe516446a0bb32bb88e5a7671e?style=for-the-badge)](https://app.codacy.com/gh/mvdkleijn/homedash)
+[![Codacy grade](https://img.shields.io/codacy/grade/dd407766bf6249e28daa954348d5e672?style=for-the-badge)](https://app.codacy.com/gh/mvdkleijn/homedash)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mvdkleijn/homedash?style=for-the-badge)](https://goreportcard.com/report/github.com/mvdkleijn/homedash)
 ![Liberapay patrons](https://img.shields.io/liberapay/patrons/mvdkleijn?style=for-the-badge)
 
