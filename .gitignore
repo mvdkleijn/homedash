@@ -21,3 +21,6 @@ dashboard
 
 # Go workspace file
 go.work
+
+build.sh
+.woodpecker**
