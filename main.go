@@ -80,6 +80,9 @@ func main() {
 	api := r.PathPrefix("/api").Subrouter()
 	routes.AddRoutesForV1(api)
 
+	// Define a route for serving icons
+	r.HandleFunc("/icons/{filename}", routes.ServeIcon).Methods("GET")
+
 	// Serve the index.html file from the embedded static directory on the root URL ("/")
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		indexHtml, err := staticFS.ReadFile("static/index.html")
@@ -101,5 +104,8 @@ func main() {
 	// Start the server
 	address := fmt.Sprintf("%s:%s", c.Config.Global.ServerAddress, c.Config.Global.ServerPort)
 	c.Logger.Infof("starting server on %s", address)
-	http.ListenAndServe(address, r)
+	err := http.ListenAndServe(address, r)
+	if err != nil {
+		c.Logger.Debugf("error trying to serve data: %v", err)
+	}
 }

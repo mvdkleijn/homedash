@@ -12,8 +12,9 @@
 package models
 
 type ContainerInfo struct {
-	Name    string `json:"name"`
-	Url     string `json:"url"`
-	Icon    string `json:"icon"`
-	Comment string `json:"comment"`
+	Name     string `json:"name"`
+	Url      string `json:"url"`
+	Icon     string `json:"icon"`
+	IconFile string `json:"iconFile"`
+	Comment  string `json:"comment"`
 }

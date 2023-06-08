@@ -18,9 +18,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+type IconIndex map[string]string
+
 type Configuration struct {
 	Global GlobalConfiguration
 	Cors   CorsConfiguration
+	Icons  IconConfiguration
 }
 
 // GlobalConfig holds global configuration items
@@ -30,6 +33,11 @@ type GlobalConfiguration struct {
 	ServerPort          string
 	MaxAgeBeforeCleanup int
 	CleanCheckInterval  int
+}
+
+type IconConfiguration struct {
+	CacheDir string
+	TmpDir   string
 }
 
 type CorsConfiguration struct {
@@ -43,6 +51,7 @@ type CorsConfiguration struct {
 var (
 	Config Configuration
 	Logger *log.Logger
+	Index  IconIndex = IconIndex{}
 )
 
 func initViper() {
@@ -53,6 +62,8 @@ func initViper() {
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("maxAge", "20")
+	viper.SetDefault("icons.TmpDir", "data/tmp")
+	viper.SetDefault("icons.CacheDir", "data/cache")
 	viper.SetDefault("checkInterval", "1")
 	viper.SetDefault("cors.allowedOrigins", "*")
 	viper.SetDefault("cors.allowCredentials", false)
@@ -77,6 +88,8 @@ func initViper() {
 	Config.Global.Debug = viper.GetBool("debug")
 	Config.Global.MaxAgeBeforeCleanup = viper.GetInt("maxAge")
 	Config.Global.CleanCheckInterval = viper.GetInt("checkInterval")
+	Config.Icons.TmpDir = viper.GetString("icons.tmpdir")
+	Config.Icons.CacheDir = viper.GetString("icons.cachedir")
 	Config.Cors.AllowedOrigins = viper.GetStringSlice("cors.allowedOrigins")
 	Config.Cors.AllowCredentials = viper.GetBool("cors.allowCredentials")
 	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
@@ -98,6 +111,8 @@ func init() {
 		Logger.SetLevel(log.DebugLevel)
 		Logger.Debug("enabled DEBUG logging level")
 	}
+
+	UpdateIcons(false)
 
 	Logger.Info("initialization completed")
 	Logger.Debugf("dumping active configuration: %v", Config)

@@ -35,6 +35,7 @@ jobs:
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: ./homedash-*
+          generate_release_notes: true
           append_body: true
           body: |
             The container image for this release is available from https://ghcr.io/mvdkleijn/homedash

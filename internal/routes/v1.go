@@ -13,8 +13,12 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	c "github.com/mvdkleijn/homedash/internal/config"
@@ -57,6 +61,16 @@ func AddRoutesForV1(rg *mux.Router) error {
 			containerUpdate.Containers = []m.ContainerInfo{}
 		}
 
+		for i := range containerUpdate.Containers {
+			value, exists := c.Index[containerUpdate.Containers[i].Icon]
+
+			if exists {
+				containerUpdate.Containers[i].IconFile = "/icons/" + value
+			} else {
+				containerUpdate.Containers[i].IconFile = "/static/default-icon.svg"
+			}
+		}
+
 		DataStore.AddEntries(containerUpdate.Uuid, containerUpdate.Containers)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -94,4 +108,43 @@ func AddRoutesForV1(rg *mux.Router) error {
 	}).Methods("HEAD")
 
 	return nil
+}
+
+func ServeIcon(w http.ResponseWriter, r *http.Request) {
+	// Get the filename parameter from the URL
+	vars := mux.Vars(r)
+	filename := vars["filename"]
+
+	// Construct the path to the file
+	filePath := filepath.Join("data/cache/icons", filename)
+
+	fmt.Printf("Serving icon %s", filePath)
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+
+	// Get the file's information
+	fileInfo, err := file.Stat()
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Get the file's content type
+	ext := strings.TrimPrefix(filepath.Ext(filename), ".")
+	if ext == "svg" {
+		ext = "svg+xml"
+	}
+	contentType := "image/" + ext
+
+	// Set the appropriate content type header
+	w.Header().Set("Content-Type", contentType)
+
+	// Serve the file
+	http.ServeContent(w, r, filename, fileInfo.ModTime(), file)
 }
