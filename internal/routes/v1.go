@@ -116,7 +116,7 @@ func ServeIcon(w http.ResponseWriter, r *http.Request) {
 	filename := vars["filename"]
 
 	// Construct the path to the file
-	filePath := filepath.Join("data/cache/icons", filename)
+	filePath := filepath.Join(c.Config.Icons.CacheDir, "icons", filename)
 
 	fmt.Printf("Serving icon %s", filePath)
 
