@@ -12,6 +12,7 @@
 package config
 
 import (
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -62,8 +63,14 @@ func initViper() {
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("maxAge", "20")
-	viper.SetDefault("icons.TmpDir", "data/tmp")
-	viper.SetDefault("icons.CacheDir", "data/cache")
+	if isRunningInContainer() {
+		Logger.Debugln("detected that we're runnning in a container, using /homedash as default data directory")
+		viper.SetDefault("icons.TmpDir", "/homedash/tmp")
+		viper.SetDefault("icons.CacheDir", "/homedash/cache")
+	} else {
+		viper.SetDefault("icons.TmpDir", "./data/tmp")
+		viper.SetDefault("icons.CacheDir", "./data/cache")
+	}
 	viper.SetDefault("checkInterval", "1")
 	viper.SetDefault("cors.allowedOrigins", "*")
 	viper.SetDefault("cors.allowCredentials", false)
@@ -116,4 +123,11 @@ func init() {
 
 	Logger.Info("initialization completed")
 	Logger.Debugf("dumping active configuration: %v", Config)
+}
+
+func isRunningInContainer() bool {
+	if _, err := os.Stat("/homedash"); err != nil {
+		return false
+	}
+	return true
 }

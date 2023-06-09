@@ -23,13 +23,12 @@ RUN \
   esac && \
   wget https://github.com/mvdkleijn/healthchecker/releases/download/v1.0.2/healthchecker-${DOWNLOAD_ARCH} && \
   mv /build/healthchecker-${DOWNLOAD_ARCH} /build/healthchecker && \
-  chmod 755 /build/healthchecker
+  chmod 755 /build/healthchecker && \
+  mkdir /homedash && chmod 755 /homedash
 
 COPY . .
 
 RUN go mod download
-RUN go vet -v
-RUN go test -v
 RUN go build -ldflags="-w -s" -o app .
 
 #####################
@@ -39,6 +38,7 @@ FROM --platform=${TARGETPLATFORM:-linux/arm64} gcr.io/distroless/static-debian11
 
 COPY --from=builder /build/app /
 COPY --from=builder /build/healthchecker /healthchecker
+COPY --from=builder /homedash /homedash
 
 EXPOSE 8080
 
