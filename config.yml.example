@@ -7,6 +7,10 @@ server:
     address: ""
     port: "8080"
 
+icons:
+    tmpdir: ./data/tmp
+    cachedir: ./data/cache
+
 cors:
     allowcredentials: false
     allowedheaders: Content-Type

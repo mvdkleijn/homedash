@@ -62,18 +62,20 @@ Make sure to prefix the environment variable with "HOMEDASH_".
 
 All environment variables **must** be prefixed by "HOMEDASH_".
 
-| Environment variables | Config file             | Description                                         | Default               |
-| --------------------- | ----------------------- | --------------------------------------------------- | --------------------- |
-| DEBUG                 | debug:                  | Output debug statements or not                      | false                 |
-| MAXAGE                | maxage:                 | Maximum age of entries from a sidecar (minutes)     | 20                    |
-| CHECKINTERVAL         | cleancheckinterval:     | How often the server tries to clean (minutes)       | 1                     |
-| SERVER_PORT           | server: port:           | Port to listen to                                   | "8080"                |
-| SERVER_ADDRESS        | server: address:        | Address to listen on                                | "" (any address)      |
-| CORS_DEBUG            | cors: debug:            | Show debug statements regarding CORS                | false                 |
-| CORS_ALLOWEDHEADERS   | cors: allowedheaders:   | HTTP headers allowed by CORS                        | "Content-Type"        |
-| CORS_ALLOWEDMETHODS   | cors: allowedmethods:   | HTTP methods allowed by CORS                        | "GET", "POST", "HEAD" |
-| CORS_ALLOWEDORIGINS   | cors: allowedorigins:   | Origins of requests allowed by CORS                 | "*"                   |
-| CORS_ALLOWCREDENTIALS | cors: allowcredentials: | Allow user credentials as part of request to server | false                 |
+| Environment variables | Config file             | Description                                          | Default                                              |
+| --------------------- | ----------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| DEBUG                 | debug:                  | Output debug statements or not                       | false                                                |
+| MAXAGE                | maxage:                 | Maximum age of entries from a sidecar (minutes)      | 20                                                   |
+| CHECKINTERVAL         | cleancheckinterval:     | How often the server tries to clean (minutes)        | 1                                                    |
+| SERVER_PORT           | server: port:           | Port to listen to                                    | "8080"                                               |
+| SERVER_ADDRESS        | server: address:        | Address to listen on                                 | "" (any address)                                     |
+| ICONS_TMPDIR          | icons: tmpdir:          | Location of a tmp directory used for temporary files | "./data/tmp" or "/homedash/tmp" (when container)     |
+| ICONS_CACHEDIR        | icons: cachedir:        | Location of a cache directory used for caching files | "./data/cache" or "/homedash/cache" (when container) |
+| CORS_DEBUG            | cors: debug:            | Show debug statements regarding CORS                 | false                                                |
+| CORS_ALLOWEDHEADERS   | cors: allowedheaders:   | HTTP headers allowed by CORS                         | "Content-Type"                                       |
+| CORS_ALLOWEDMETHODS   | cors: allowedmethods:   | HTTP methods allowed by CORS                         | "GET", "POST", "HEAD"                                |
+| CORS_ALLOWEDORIGINS   | cors: allowedorigins:   | Origins of requests allowed by CORS                  | "*"                                                  |
+| CORS_ALLOWCREDENTIALS | cors: allowcredentials: | Allow user credentials as part of request to server  | false                                                |
 
 ## Support
 
