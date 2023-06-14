@@ -65,11 +65,11 @@ func initViper() {
 	viper.SetDefault("maxAge", "20")
 	if isRunningInContainer() {
 		Logger.Debugln("detected that we're runnning in a container, using /homedash as default data directory")
-		viper.SetDefault("icons.TmpDir", "/homedash/tmp")
-		viper.SetDefault("icons.CacheDir", "/homedash/cache")
+		viper.SetDefault("icons.tmpDir", "/homedash/tmp")
+		viper.SetDefault("icons.cacheDir", "/homedash/cache")
 	} else {
-		viper.SetDefault("icons.TmpDir", "./data/tmp")
-		viper.SetDefault("icons.CacheDir", "./data/cache")
+		viper.SetDefault("icons.tmpDir", "./data/tmp")
+		viper.SetDefault("icons.cacheDir", "./data/cache")
 	}
 	viper.SetDefault("checkInterval", "1")
 	viper.SetDefault("cors.allowedOrigins", "*")
@@ -83,6 +83,10 @@ func initViper() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	viper.AddConfigPath(".")
+	if isRunningInContainer() {
+		viper.AddConfigPath("/homedash")
+	}
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		Logger.Infof("tried to load configuration file but found none")
@@ -95,8 +99,8 @@ func initViper() {
 	Config.Global.Debug = viper.GetBool("debug")
 	Config.Global.MaxAgeBeforeCleanup = viper.GetInt("maxAge")
 	Config.Global.CleanCheckInterval = viper.GetInt("checkInterval")
-	Config.Icons.TmpDir = viper.GetString("icons.tmpdir")
-	Config.Icons.CacheDir = viper.GetString("icons.cachedir")
+	Config.Icons.TmpDir = viper.GetString("icons.tmpDir")
+	Config.Icons.CacheDir = viper.GetString("icons.cacheDir")
 	Config.Cors.AllowedOrigins = viper.GetStringSlice("cors.allowedOrigins")
 	Config.Cors.AllowCredentials = viper.GetBool("cors.allowCredentials")
 	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
