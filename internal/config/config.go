@@ -124,15 +124,40 @@ func initViper() {
 	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
 	Config.Cors.AllowedMethods = viper.GetStringSlice("cors.allowedMethods")
 	Config.Cors.Debug = viper.GetBool("cors.debug")
+
+	var appInfos []AppInfo
 	if apps := viper.Get("static.apps"); apps != nil {
-		if appSlice, ok := apps.([]AppInfo); ok {
-			appInfos := make([]AppInfo, len(appSlice))
-			copy(appInfos, appSlice)
-			Config.Static.Apps = appInfos
+		if appSlice, ok := apps.([]interface{}); ok {
+			appInfos = make([]AppInfo, len(appSlice))
+			for i, v := range appSlice {
+				if appMap, ok := v.(map[string]interface{}); ok {
+					appInfo := AppInfo{
+						Name: appMap["name"].(string),
+					}
+					if url, ok := appMap["url"].(string); ok {
+						appInfo.Url = url
+					}
+					if icon, ok := appMap["icon"].(string); ok {
+						appInfo.Icon = icon
+					}
+					if iconFile, ok := appMap["iconFile"].(string); ok {
+						appInfo.IconFile = iconFile
+					}
+					if comment, ok := appMap["comment"].(string); ok {
+						appInfo.Comment = comment
+					}
+					appInfos[i] = appInfo
+				} else {
+					continue
+				}
+			}
+			Logger.Infof("Loaded static configuration: %v", appInfos)
+		} else {
+			Logger.Infof("Skipping invalid static configuration: %v", apps)
 		}
 	}
 
-	Logger.Debugf("loaded configuration: %v", viper.AllSettings())
+	Config.Static.Apps = appInfos
 }
 
 func init() {
