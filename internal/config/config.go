@@ -106,6 +106,8 @@ func initViper() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		Logger.Infof("tried to load configuration file but found none")
+	} else {
+		Logger.Infof("loaded configuration file: %v", viper.ConfigFileUsed())
 	}
 
 	viper.AutomaticEnv()
