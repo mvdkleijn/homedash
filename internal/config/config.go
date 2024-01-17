@@ -122,7 +122,9 @@ func initViper() {
 	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
 	Config.Cors.AllowedMethods = viper.GetStringSlice("cors.allowedMethods")
 	Config.Cors.Debug = viper.GetBool("cors.debug")
-	Config.Static.Apps = viper.Get("static.apps").([]AppInfo)
+	if apps := viper.Get("static.apps"); apps != nil {
+		Config.Static.Apps = apps.([]AppInfo)
+	}
 }
 
 func init() {
