@@ -21,7 +21,7 @@ RUN \
     "linux/amd64") DOWNLOAD_ARCH="linux-amd64"  ;; \
     "linux/arm64") DOWNLOAD_ARCH="linux-arm64"  ;; \
   esac && \
-  wget https://github.com/mvdkleijn/healthchecker/releases/download/v1.0.2/healthchecker-${DOWNLOAD_ARCH} && \
+  wget https://github.com/mvdkleijn/healthchecker/releases/download/v1.1.0/healthchecker-${DOWNLOAD_ARCH} && \
   mv /build/healthchecker-${DOWNLOAD_ARCH} /build/healthchecker && \
   chmod 755 /build/healthchecker && \
   mkdir /homedash && chmod 755 /homedash
