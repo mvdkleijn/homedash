@@ -20,3 +20,10 @@ cors:
         - HEAD
     allowedorigins: '*'
     debug: false
+
+static:
+    apps:
+        - name: "Your app"
+          url: "http://your-app.some.url/"
+          icon: "yourapp"
+          comment: "Some comment"

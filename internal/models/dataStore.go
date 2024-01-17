@@ -61,9 +61,19 @@ func (ds *DataStore) GetContainerList() []ContainerInfo {
 	defer ds.mu.Unlock()
 
 	containerInfoList := []ContainerInfo{}
+	staticAppList := c.Config.Static.Apps
 
 	for _, containerList := range ds.Containers {
 		containerInfoList = append(containerInfoList, containerList...)
+	}
+
+	for _, app := range staticAppList {
+		containerInfoList = append(containerInfoList, ContainerInfo{
+			Name:     app.Name,
+			Icon:     app.Icon,
+			IconFile: app.IconFile,
+			Comment:  app.Comment,
+		})
 	}
 
 	return containerInfoList

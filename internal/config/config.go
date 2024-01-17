@@ -25,6 +25,7 @@ type Configuration struct {
 	Global GlobalConfiguration
 	Cors   CorsConfiguration
 	Icons  IconConfiguration
+	Static StaticConfiguration
 }
 
 // GlobalConfig holds global configuration items
@@ -39,6 +40,18 @@ type GlobalConfiguration struct {
 type IconConfiguration struct {
 	CacheDir string
 	TmpDir   string
+}
+
+type StaticConfiguration struct {
+	Apps []AppInfo
+}
+
+type AppInfo struct {
+	Name     string `json:"name"`
+	Url      string `json:"url"`
+	Icon     string `json:"icon"`
+	IconFile string `json:"iconFile"`
+	Comment  string `json:"comment"`
 }
 
 type CorsConfiguration struct {
@@ -78,6 +91,9 @@ func initViper() {
 	viper.SetDefault("cors.allowedMethods", allowedMethods)
 	viper.SetDefault("cors.debug", false)
 
+	// Set default values for the static configuration
+	viper.SetDefault("apps", []AppInfo{})
+
 	viper.SetEnvPrefix("homedash")
 
 	viper.SetConfigName("config")
@@ -106,6 +122,7 @@ func initViper() {
 	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
 	Config.Cors.AllowedMethods = viper.GetStringSlice("cors.allowedMethods")
 	Config.Cors.Debug = viper.GetBool("cors.debug")
+	Config.Static.Apps = viper.Get("static.apps").([]AppInfo)
 }
 
 func init() {
