@@ -9,6 +9,7 @@
 *.so
 *.dylib
 dashboard
+data
 
 # Test binary, built with `go test -c`
 *.test
@@ -22,5 +23,7 @@ dashboard
 # Go workspace file
 go.work
 
+config.yml
+config.yaml
 build.sh
 .woodpecker**
