@@ -72,7 +72,6 @@ func (v *V1) HeadStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (v *V1) GetApplications(w http.ResponseWriter, r *http.Request) {
-	// containerList := DataStore.GetContainerList()
 	containerList := DataStore.GetContainerList()
 
 	w.Header().Set("Content-Type", "application/json")

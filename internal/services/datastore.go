@@ -15,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	// c "github.com/mvdkleijn/homedash/internal/config"
-	// r "github.com/mvdkleijn/homedash/internal/repositories"
 	m "github.com/mvdkleijn/homedash/internal/models"
 	r "github.com/mvdkleijn/homedash/internal/repositories"
 

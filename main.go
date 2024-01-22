@@ -24,7 +24,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog"
-	// "github.com/sirupsen/logrus"
 )
 
 //go:embed static/*
@@ -59,10 +58,7 @@ func main() {
 		})
 	})
 
-	// Use the Logrus logger as middleware
 	r.Use(Logger(&log))
-
-	// CORS handler
 	r.Use(cors.New(cors.Options{
 		AllowedOrigins:   c.Config.Cors.AllowedOrigins,
 		AllowedMethods:   c.Config.Cors.AllowedMethods,
@@ -72,18 +68,13 @@ func main() {
 		MaxAge:           int(time.Duration.Seconds(12 * time.Hour)),
 	}).Handler)
 
-	// Serve the embedded contents of the "static" directory on the "/static" URL
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/", http.FileServer(http.FS(staticFS))))
 
-	// Create a subrouter for version 1 of our API
 	api := r.PathPrefix("/api").Subrouter()
 	v1 := &routes.V1{}
 	v1.AddRoutes(api)
 
-	// Define a route for serving icons
 	r.HandleFunc("/icons/{filename}", routes.ServeIcon).Methods("GET")
-
-	// Serve the index.html file from the embedded static directory on the root URL ("/")
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		indexHtml, err := staticFS.ReadFile("static/index.html")
 		if err != nil {
@@ -101,7 +92,6 @@ func main() {
 		}
 	}()
 
-	// Start the server
 	address := fmt.Sprintf("%s:%s", c.Config.Global.ServerAddress, c.Config.Global.ServerPort)
 	log.Info().Str("address", address).Msg("starting server")
 	err := http.ListenAndServe(address, r)

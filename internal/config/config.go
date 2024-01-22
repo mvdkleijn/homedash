@@ -64,6 +64,7 @@ var (
 	Index  IconIndex = IconIndex{}
 )
 
+// TODO: research alternatives to Viper
 func initViper() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 

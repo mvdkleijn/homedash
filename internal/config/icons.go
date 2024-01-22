@@ -146,14 +146,12 @@ func UpdateIcons(refresh bool) {
 }
 
 func createIndex() {
-	// Read the JSON file
 	fileData, err := os.ReadFile(filepath.Join(Config.Icons.CacheDir, "list.json"))
 	if err != nil {
 		log.Err(err).Msg("failed to read JSON file")
 		return
 	}
 
-	// Parse the JSON data into the AppList struct
 	var appList AppList
 	err = json.Unmarshal(fileData, &appList)
 	if err != nil {
@@ -161,44 +159,37 @@ func createIndex() {
 		return
 	}
 
-	// Modify each entry in the apps array
 	for i := range appList.Apps {
 		app := &appList.Apps[i]
 		app.IconName = strings.Split(app.Icon, ".")[0]
 
-		// Build index in memory
 		Index[app.IconName] = app.Icon
 	}
 
-	// Convert the modified data back to JSON
 	updatedData, err := json.MarshalIndent(appList, "", "  ")
 	if err != nil {
 		log.Err(err).Msg("failed to convert data to JSON")
 		return
 	}
 
-	// Write the updated JSON to a file
 	err = os.WriteFile(filepath.Join(Config.Icons.CacheDir, "applications_index.json"), updatedData, 0644)
 	if err != nil {
 		log.Err(err).Msg("failed to write updated JSON to file")
 		return
 	}
 
-	// Delete old list.json
 	os.RemoveAll(filepath.Join(Config.Icons.CacheDir, "list.json"))
 
 	log.Info().Msg("JSON file successfully updated and exported.")
 }
 
 func createIndexFromCache() {
-	// Read the JSON file
 	fileData, err := os.ReadFile(filepath.Join(Config.Icons.CacheDir, "applications_index.json"))
 	if err != nil {
 		log.Err(err).Msg("failed to read the JSON file")
 		return
 	}
 
-	// Parse the JSON data into the AppList struct
 	var appList AppList
 	err = json.Unmarshal(fileData, &appList)
 	if err != nil {
@@ -206,11 +197,9 @@ func createIndexFromCache() {
 		return
 	}
 
-	// Modify each entry in the apps array
 	for i := range appList.Apps {
 		app := &appList.Apps[i]
 
-		// Build index in memory
 		Index[app.IconName] = app.Icon
 	}
 
