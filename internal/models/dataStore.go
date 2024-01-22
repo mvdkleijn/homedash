@@ -16,6 +16,7 @@ import (
 	"time"
 
 	c "github.com/mvdkleijn/homedash/internal/config"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/maps"
 )
 
@@ -68,6 +69,7 @@ func (ds *DataStore) GetContainerList() []ContainerInfo {
 	}
 
 	for _, app := range staticAppList {
+		log.Debugf("adding static app %s with icon %s", app.Name, app.Icon)
 		containerInfoList = append(containerInfoList, ContainerInfo{
 			Name:     app.Name,
 			Icon:     app.Icon,
