@@ -19,7 +19,8 @@ import (
 	// r "github.com/mvdkleijn/homedash/internal/repositories"
 	m "github.com/mvdkleijn/homedash/internal/models"
 	r "github.com/mvdkleijn/homedash/internal/repositories"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -40,11 +41,11 @@ func (ds *DataStore) CleanupOutdatedEntries(maxAgeInMinutes int) {
 
 	now := time.Now()
 	uuids := maps.Keys(ds.Containers)
-	log.Debugf("cleaning up outdated entries")
+	log.Debug().Msg("cleaning up outdated entries")
 	for _, uuid := range uuids {
 		// Remove data if no updates in X minutes or more
 		if now.Sub(ds.LastUpdated[uuid]) >= time.Duration(maxAgeInMinutes)*time.Minute {
-			log.Debugf("removing entries for sidecar %s", uuid)
+			log.Debug().Str("uuid", uuid).Msg("removing entries for sidecar")
 			delete(ds.Containers, uuid)
 			delete(ds.LastUpdated, uuid)
 		}
@@ -65,7 +66,6 @@ func (ds *DataStore) GetContainerList() []m.ContainerInfo {
 	defer ds.mu.Unlock()
 
 	containerInfoList := []m.ContainerInfo{}
-	// staticAppList := c.Config.Static.Apps
 
 	for _, containerList := range ds.Containers {
 		containerInfoList = append(containerInfoList, containerList...)
@@ -74,16 +74,6 @@ func (ds *DataStore) GetContainerList() []m.ContainerInfo {
 	for _, containerList := range r.GetAppList() {
 		containerInfoList = append(containerInfoList, containerList...)
 	}
-
-	// for _, app := range staticAppList {
-	// 	log.Debugf("adding static app %s with icon %s", app.Name, app.Icon)
-	// 	containerInfoList = append(containerInfoList, ContainerInfo{
-	// 		Name:     app.Name,
-	// 		Icon:     app.Icon,
-	// 		IconFile: app.IconFile,
-	// 		Comment:  app.Comment,
-	// 	})
-	// }
 
 	return containerInfoList
 }
@@ -104,7 +94,7 @@ func (ds *DataStore) AddEntries(uuid string, containers []m.ContainerInfo) {
 }
 
 func (ds *DataStore) ReplaceEntries(uuid string, containers []m.ContainerInfo) {
-	// Maybe check if entry already exists in future but not sure why we'd want to right now.
+	// TODO: Maybe check if entry already exists in future but not sure why we'd want to right now.
 	ds.AddEntries(uuid, containers)
 }
 
