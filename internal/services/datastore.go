@@ -1,6 +1,6 @@
 /*
 	HomeDash - A simple, automated dashboard for home labs.
-	Copyright (C) 2023  Martijn van der Kleijn
+	Copyright (C) 2023-2024  Martijn van der Kleijn
 
 	This file is part of HomeDash.
 
