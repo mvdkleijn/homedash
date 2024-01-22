@@ -13,6 +13,7 @@ Features include:
 - Basic UI for dashboard based on plain HTML, CSS and a sprinkling of VueJS
 - Automated, regular removal/refresh of entries older that X minutes
 - Configuration through environment variables or config.yml file
+- Possibility to add statically defined applications through config file
 - Swagger docs for REST API (see http://localhost:8080/static/docs)
 - Distroless container image
 - Multi-architecture container image
@@ -27,7 +28,8 @@ Keep in mind that this is intended for local usage, so there are no provisions f
    - the REST API, see http://localhost:8080/static/docs/ for details.
 3) Go to http://localhost:8080/ to view the dashboard. (or whatever URL you host it on)
 
-An example docker-compose.yml file is included in the root of this git repository. The example assumes you use Traefik and something like https://github.com/tecnativa/docker-socket-proxy so adjust where needed for your situation.
+An example docker-compose.yml file is included in the root of this git repository. The example assumes you use Traefik
+and something like https://github.com/tecnativa/docker-socket-proxy so adjust where needed for your situation.
 
 ## Configuration
 
@@ -46,6 +48,8 @@ The defaults of HomeDash are sane, though open. (see the table)
 - Copy `config.yml.example` to `config.yml`
 - Place the `config.yml` file next to the binary
 - Edit where needed.
+
+If desired, add one or more statically define applications through the `config.yml` file. See the example file for details.
 
 **Note:** though you *can* set CORS settings it is probably not advisable to do so unless you know what you're doing.
 
