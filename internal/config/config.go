@@ -50,14 +50,6 @@ type StaticConfiguration struct {
 	Apps []m.ContainerInfo
 }
 
-// type AppInfo struct {
-// 	Name     string `json:"name"`
-// 	Url      string `json:"url"`
-// 	Icon     string `json:"icon"`
-// 	IconFile string `json:"iconFile"`
-// 	Comment  string `json:"comment"`
-// }
-
 type CorsConfiguration struct {
 	AllowedOrigins   []string
 	AllowCredentials bool
@@ -94,8 +86,6 @@ func initViper() {
 	viper.SetDefault("cors.allowedHeaders", "Content-Type")
 	viper.SetDefault("cors.allowedMethods", allowedMethods)
 	viper.SetDefault("cors.debug", false)
-
-	// Set default values for the static configuration
 	viper.SetDefault("apps", []m.ContainerInfo{})
 
 	viper.SetEnvPrefix("homedash")
@@ -165,10 +155,6 @@ func initViper() {
 func init() {
 	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
 	Logger = &log
-	// Logger.SetFormatter(&log.TextFormatter{
-	// 	DisableColors: false,
-	// 	FullTimestamp: true,
-	// })
 
 	log.Info().Msg("initializing system")
 	initViper()
@@ -200,11 +186,11 @@ func UpdateIconPaths() {
 }
 
 func GetIconPath(icon string) string {
-	log.Info().Str("icon", icon).Msg("getting icon path")
+	log.Debug().Str("icon", icon).Msg("getting path")
 	value, exists := Index[icon]
-	log.Debug().Interface("index", Index).Msg("icon index")
 
 	if !exists {
+		log.Debug().Str("icon", icon).Msg("not found in index")
 		return "/static/default-icon.svg"
 	}
 
