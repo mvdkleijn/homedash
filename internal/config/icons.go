@@ -37,7 +37,7 @@ const (
 )
 
 func downloadFile(url string, filepath string) error {
-	Logger.Debugf("Attempting to download update from %s", url)
+	Logger.Debug().Str("url", url).Msg("attempting to download update from url")
 
 	response, err := http.Get(url)
 	if err != nil {
@@ -100,7 +100,7 @@ func UpdateIcons(refresh bool) {
 	// Check if the directory exists
 	_, err := os.Stat(filepath.Join(Config.Icons.CacheDir, "applications_index.json"))
 	if err == nil && !refresh {
-		Logger.Infof("already have icons and not asked to refresh")
+		Logger.Info().Msg("already have icons and not asked to refresh")
 		createIndexFromCache()
 		return
 	}

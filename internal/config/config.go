@@ -12,10 +12,14 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	m "github.com/mvdkleijn/homedash/internal/models"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -43,16 +47,16 @@ type IconConfiguration struct {
 }
 
 type StaticConfiguration struct {
-	Apps []AppInfo
+	Apps []m.ContainerInfo
 }
 
-type AppInfo struct {
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-	Icon     string `json:"icon"`
-	IconFile string `json:"iconFile"`
-	Comment  string `json:"comment"`
-}
+// type AppInfo struct {
+// 	Name     string `json:"name"`
+// 	Url      string `json:"url"`
+// 	Icon     string `json:"icon"`
+// 	IconFile string `json:"iconFile"`
+// 	Comment  string `json:"comment"`
+// }
 
 type CorsConfiguration struct {
 	AllowedOrigins   []string
@@ -64,7 +68,7 @@ type CorsConfiguration struct {
 
 var (
 	Config Configuration
-	Logger *log.Logger
+	Logger *zerolog.Logger
 	Index  IconIndex = IconIndex{}
 )
 
@@ -77,7 +81,7 @@ func initViper() {
 	viper.SetDefault("debug", false)
 	viper.SetDefault("maxAge", "20")
 	if isRunningInContainer() {
-		Logger.Debugln("detected that we're runnning in a container, using /homedash as default data directory")
+		Logger.Debug().Msg("detected that we're runnning in a container, using /homedash as default data directory")
 		viper.SetDefault("icons.tmpDir", "/homedash/tmp")
 		viper.SetDefault("icons.cacheDir", "/homedash/cache")
 	} else {
@@ -92,7 +96,7 @@ func initViper() {
 	viper.SetDefault("cors.debug", false)
 
 	// Set default values for the static configuration
-	viper.SetDefault("apps", []AppInfo{})
+	viper.SetDefault("apps", []m.ContainerInfo{})
 
 	viper.SetEnvPrefix("homedash")
 
@@ -105,9 +109,9 @@ func initViper() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		Logger.Infof("tried to load configuration file but found none")
+		Logger.Info().Msg("tried to load configuration file but found none")
 	} else {
-		Logger.Infof("loaded configuration file: %v", viper.ConfigFileUsed())
+		Logger.Info().Str("configfile", viper.ConfigFileUsed()).Msg("loaded configuration file")
 	}
 
 	viper.AutomaticEnv()
@@ -125,13 +129,13 @@ func initViper() {
 	Config.Cors.AllowedMethods = viper.GetStringSlice("cors.allowedMethods")
 	Config.Cors.Debug = viper.GetBool("cors.debug")
 
-	var appInfos []AppInfo
+	var appInfos []m.ContainerInfo
 	if apps := viper.Get("static.apps"); apps != nil {
 		if appSlice, ok := apps.([]interface{}); ok {
-			appInfos = make([]AppInfo, len(appSlice))
+			appInfos = make([]m.ContainerInfo, len(appSlice))
 			for i, v := range appSlice {
 				if appMap, ok := v.(map[string]interface{}); ok {
-					appInfo := AppInfo{
+					appInfo := m.ContainerInfo{
 						Name: appMap["name"].(string),
 					}
 					if url, ok := appMap["url"].(string); ok {
@@ -140,20 +144,18 @@ func initViper() {
 					if icon, ok := appMap["icon"].(string); ok {
 						appInfo.Icon = icon
 					}
-					if iconFile, ok := appMap["iconFile"].(string); ok {
-						appInfo.IconFile = iconFile
-					}
 					if comment, ok := appMap["comment"].(string); ok {
 						appInfo.Comment = comment
 					}
+					appInfo.IconFile = GetIconPath(appInfo.Icon)
 					appInfos[i] = appInfo
 				} else {
 					continue
 				}
 			}
-			Logger.Infof("Loaded static configuration: %v", appInfos)
+			Logger.Info().Str("appInfos", fmt.Sprintf("%v", appInfos)).Msg("Loaded static configuration")
 		} else {
-			Logger.Infof("Skipping invalid static configuration: %v", apps)
+			Logger.Info().Str("apps", fmt.Sprintf("%v", apps)).Msg("Skipping invalid static configuration")
 		}
 	}
 
@@ -161,24 +163,27 @@ func initViper() {
 }
 
 func init() {
-	Logger = log.New()
-	Logger.SetFormatter(&log.TextFormatter{
-		DisableColors: false,
-		FullTimestamp: true,
-	})
+	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
+	Logger = &log
+	// Logger.SetFormatter(&log.TextFormatter{
+	// 	DisableColors: false,
+	// 	FullTimestamp: true,
+	// })
 
-	Logger.Info("initializing system")
+	log.Info().Msg("initializing system")
 	initViper()
 
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if Config.Global.Debug {
-		Logger.SetLevel(log.DebugLevel)
-		Logger.Debug("enabled DEBUG logging level")
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		log.Debug().Msg("enabled DEBUG logging level")
 	}
 
 	UpdateIcons(false)
+	UpdateIconPaths()
 
-	Logger.Info("initialization completed")
-	Logger.Debugf("dumping active configuration: %v", Config)
+	log.Info().Msg("initialization completed")
+	Logger.Debug().Interface("config", Config).Msg("dumping active configuration")
 }
 
 func isRunningInContainer() bool {
@@ -186,4 +191,22 @@ func isRunningInContainer() bool {
 		return false
 	}
 	return true
+}
+
+func UpdateIconPaths() {
+	for i := range Config.Static.Apps {
+		Config.Static.Apps[i].IconFile = GetIconPath(Config.Static.Apps[i].Icon)
+	}
+}
+
+func GetIconPath(icon string) string {
+	log.Info().Str("icon", icon).Msg("getting icon path")
+	value, exists := Index[icon]
+	log.Debug().Interface("index", Index).Msg("icon index")
+
+	if !exists {
+		return "/static/default-icon.svg"
+	}
+
+	return fmt.Sprintf("/icons/%s", value)
 }

@@ -13,7 +13,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -23,128 +22,122 @@ import (
 
 	c "github.com/mvdkleijn/homedash/internal/config"
 	m "github.com/mvdkleijn/homedash/internal/models"
+	s "github.com/mvdkleijn/homedash/internal/services"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 )
 
-var DataStore = m.DataStore{
+var DataStore = s.DataStore{
 	LastUpdated: map[string]time.Time{},
 	Containers:  make(map[string][]m.ContainerInfo),
 }
 
-func AddRoutesForV1(rg *mux.Router) error {
+type V1 struct{}
+
+func (v *V1) AddRoutes(rg *mux.Router) error {
 	api := rg.PathPrefix("/v1").Subrouter()
 
-	// Create a route to handle the POST request to /v1/applications
-	api.HandleFunc("/applications", func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
-
-		var containerUpdate m.ContainerUpdate
-		err = json.Unmarshal(body, &containerUpdate)
-		if err != nil {
-			http.Error(w, "invalid JSON payload", http.StatusBadRequest)
-			return
-		}
-
-		if containerUpdate.Uuid == "" {
-			error := "missing uuid in payload"
-			c.Logger.Warn(error)
-			http.Error(w, error, http.StatusUnprocessableEntity)
-			return
-		}
-
-		if containerUpdate.Containers == nil {
-			containerUpdate.Containers = []m.ContainerInfo{}
-		}
-
-		for i := range containerUpdate.Containers {
-			value, exists := c.Index[containerUpdate.Containers[i].Icon]
-
-			if exists {
-				containerUpdate.Containers[i].IconFile = "/icons/" + value
-			} else {
-				containerUpdate.Containers[i].IconFile = "/static/default-icon.svg"
-			}
-		}
-
-		DataStore.AddEntries(containerUpdate.Uuid, containerUpdate.Containers)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(containerUpdate)
-	}).Methods("POST")
-
-	// Create a route to handle the GET request to /v1/applications
-	api.HandleFunc("/applications", func(w http.ResponseWriter, r *http.Request) {
-		containerList := DataStore.GetContainerList()
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(containerList)
-	}).Methods("GET")
-
-	// Create a route to handle the GET request to /v1/sidecars
-	api.HandleFunc("/sidecars", func(w http.ResponseWriter, r *http.Request) {
-		sidecarList := DataStore.GetSidecarList()
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(sidecarList)
-	}).Methods("GET")
-
-	api.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode("OK")
-	}).Methods("GET")
-
-	api.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-	}).Methods("HEAD")
+	api.HandleFunc("/applications", v.PostApplications).Methods(http.MethodPost)
+	api.HandleFunc("/applications", v.GetApplications).Methods(http.MethodGet)
+	api.HandleFunc("/sidecars", v.GetSidecars).Methods(http.MethodGet)
+	api.HandleFunc("/status", v.GetStatus).Methods(http.MethodGet)
+	api.HandleFunc("/status", v.HeadStatus).Methods(http.MethodHead)
 
 	return nil
 }
 
+func (v *V1) GetSidecars(w http.ResponseWriter, r *http.Request) {
+	sidecars := DataStore.GetSidecarList()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(sidecars); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (v *V1) GetStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	err := json.NewEncoder(w).Encode("OK")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (v *V1) HeadStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (v *V1) GetApplications(w http.ResponseWriter, r *http.Request) {
+	// containerList := DataStore.GetContainerList()
+	containerList := DataStore.GetContainerList()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(containerList)
+}
+
+func (v *V1) PostApplications(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	var containerUpdate m.ContainerUpdate
+	err = json.Unmarshal(body, &containerUpdate)
+	if err != nil {
+		http.Error(w, "invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	if containerUpdate.Uuid == "" {
+		errorMsg := "missing uuid in payload"
+		log.Warn().Str("uuid", errorMsg)
+		http.Error(w, errorMsg, http.StatusUnprocessableEntity)
+		return
+	}
+
+	if containerUpdate.Containers == nil {
+		containerUpdate.Containers = []m.ContainerInfo{}
+	}
+
+	for i := range containerUpdate.Containers {
+		containerUpdate.Containers[i].IconFile = c.GetIconPath(containerUpdate.Containers[i].Icon)
+	}
+
+	DataStore.AddEntries(containerUpdate.Uuid, containerUpdate.Containers)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(containerUpdate)
+}
+
 func ServeIcon(w http.ResponseWriter, r *http.Request) {
-	// Get the filename parameter from the URL
 	vars := mux.Vars(r)
 	filename := vars["filename"]
-
-	// Construct the path to the file
 	filePath := filepath.Join(c.Config.Icons.CacheDir, "icons", filename)
 
-	fmt.Printf("Serving icon %s", filePath)
+	log.Printf("Serving icon %s", filePath)
 
-	// Open the file
-	file, err := os.Open(filePath)
-	if err != nil {
-		http.NotFound(w, r)
-		return
+	if file, err := os.Open(filePath); err == nil {
+		defer file.Close()
+
+		if fileInfo, err := file.Stat(); err == nil {
+			ext := strings.TrimPrefix(filepath.Ext(filename), ".")
+			if ext == "svg" {
+				ext = "svg+xml"
+			}
+			contentType := "image/" + ext
+
+			w.Header().Set("Content-Type", contentType)
+
+			http.ServeContent(w, r, filename, fileInfo.ModTime(), file)
+			return
+		}
 	}
-	defer file.Close()
-
-	// Get the file's information
-	fileInfo, err := file.Stat()
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	// Get the file's content type
-	ext := strings.TrimPrefix(filepath.Ext(filename), ".")
-	if ext == "svg" {
-		ext = "svg+xml"
-	}
-	contentType := "image/" + ext
-
-	// Set the appropriate content type header
-	w.Header().Set("Content-Type", contentType)
-
-	// Serve the file
-	http.ServeContent(w, r, filename, fileInfo.ModTime(), file)
+	http.NotFound(w, r)
 }

@@ -18,3 +18,8 @@ type ContainerInfo struct {
 	IconFile string `json:"iconFile"`
 	Comment  string `json:"comment"`
 }
+
+type ContainerUpdate struct {
+	Uuid       string          `json:"uuid"`
+	Containers []ContainerInfo `json:"containers"`
+}

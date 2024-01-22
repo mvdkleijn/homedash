@@ -15,6 +15,7 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	c "github.com/mvdkleijn/homedash/internal/config"
@@ -22,22 +23,18 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	// "github.com/sirupsen/logrus"
 )
 
 //go:embed static/*
 var staticFS embed.FS
 
 // Logger is a middleware function that logs each request to the given Logrus logger instance
-func Logger(logger *logrus.Logger) mux.MiddlewareFunc {
+func Logger(logger *zerolog.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger.WithFields(logrus.Fields{
-				"remoteaddr": r.RemoteAddr,
-				"protocol":   r.Proto,
-				"method":     r.Method,
-				"url":        r.URL.String(),
-			}).Info("request received")
+			logger.Info().Str("remoteaddr", r.RemoteAddr).Str("protocol", r.Proto).Str("method", r.Method).Str("url", r.URL.String()).Msg("request received")
 
 			next.ServeHTTP(w, r)
 		})
@@ -45,6 +42,8 @@ func Logger(logger *logrus.Logger) mux.MiddlewareFunc {
 }
 
 func main() {
+	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
+
 	r := mux.NewRouter()
 
 	// Panic recovery
@@ -61,7 +60,7 @@ func main() {
 	})
 
 	// Use the Logrus logger as middleware
-	r.Use(Logger(c.Logger))
+	r.Use(Logger(&log))
 
 	// CORS handler
 	r.Use(cors.New(cors.Options{
@@ -78,7 +77,8 @@ func main() {
 
 	// Create a subrouter for version 1 of our API
 	api := r.PathPrefix("/api").Subrouter()
-	routes.AddRoutesForV1(api)
+	v1 := &routes.V1{}
+	v1.AddRoutes(api)
 
 	// Define a route for serving icons
 	r.HandleFunc("/icons/{filename}", routes.ServeIcon).Methods("GET")
@@ -103,9 +103,9 @@ func main() {
 
 	// Start the server
 	address := fmt.Sprintf("%s:%s", c.Config.Global.ServerAddress, c.Config.Global.ServerPort)
-	c.Logger.Infof("starting server on %s", address)
+	log.Info().Str("address", address).Msg("starting server")
 	err := http.ListenAndServe(address, r)
 	if err != nil {
-		c.Logger.Debugf("error trying to serve data: %v", err)
+		log.Debug().Err(err).Msg("error trying to serve data")
 	}
 }
