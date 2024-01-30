@@ -12,6 +12,7 @@
 package services
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -73,7 +74,15 @@ func (ds *DataStore) GetContainerList() []m.ContainerInfo {
 		containerInfoList = append(containerInfoList, containerList...)
 	}
 
-	return containerInfoList
+	return ds.sortContainersByName(containerInfoList)
+}
+
+func (ds *DataStore) sortContainersByName(containers []m.ContainerInfo) []m.ContainerInfo {
+	sort.Slice(containers, func(i, j int) bool {
+		return containers[i].Name < containers[j].Name
+	})
+
+	return containers
 }
 
 func (ds *DataStore) GetSidecarList() []string {
