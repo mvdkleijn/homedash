@@ -34,6 +34,8 @@ jobs:
       - name: changelog
         uses: saadmk11/changelog-ci@v1.1.2
         id: changelog
+        with:
+          release_version: ${{ github.ref_name }}
 
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
