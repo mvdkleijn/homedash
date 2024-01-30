@@ -6,17 +6,8 @@ on:
       - "v*.*.*"
 
 jobs:
-  changelog:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: "Generate release changelog"
-        uses: heinrichreimer/action-github-changelog-generator@v2.3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }} 
-
   build-and-release:
     runs-on: ubuntu-latest
-    needs: changelog
 
     steps:
       - uses: actions/checkout@v4
@@ -40,10 +31,14 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
+      - name: changelog
+        uses: saadmk11/changelog-ci@v1.1.2
+        id: changelog
+
       - name: Release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: ./homedash-*
           generate_release_notes: true
           append_body: true
-          body: ${{ format('{0}\n\n{1}', needs.changelog.outputs.changelog, 'The container image for this release is available from https://ghcr.io/mvdkleijn/homedash') }}
+          body: "${{ steps.changelog.outputs.changelog }}"
