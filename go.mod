@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/rs/cors v1.11.0
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/spf13/viper v1.18.2
 )
 
