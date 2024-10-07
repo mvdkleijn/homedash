@@ -118,6 +118,13 @@ func (v *V1) PostApplications(w http.ResponseWriter, r *http.Request) {
 func ServeIcon(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	filename := vars["filename"]
+
+	// Validate filename to ensure it does not contain any path separators or parent directory references
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		http.Error(w, "Invalid file name", http.StatusBadRequest)
+		return
+	}
+
 	filePath := filepath.Join(c.Config.Icons.CacheDir, "icons", filename)
 
 	log.Printf("Serving icon %s", filePath)
