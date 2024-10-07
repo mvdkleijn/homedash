@@ -69,6 +69,10 @@ func unzipFile(src, dest string) error {
 	defer reader.Close()
 
 	for _, file := range reader.File {
+		if strings.Contains(file.Name, "..") {
+			log.Warn().Str("file", file.Name).Msg("skipping file with invalid path")
+			continue
+		}
 		path := filepath.Join(dest, file.Name)
 		if file.FileInfo().IsDir() {
 			os.MkdirAll(path, os.ModePerm)
