@@ -1,12 +1,13 @@
 module github.com/mvdkleijn/homedash
 
 go 1.22.7
+
 toolchain go1.24.1
 
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/rs/cors v1.11.1
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	github.com/spf13/viper v1.20.0
 )
 
