@@ -90,4 +90,4 @@ Source code and issues: https://github.com/mvdkleijn/homedash
 HomeDash is made available under the [MPL-2.0](https://choosealicense.com/licenses/mpl-2.0/)
 license. The full details are available from the [LICENSE](/LICENSE) file.
 
-Copyright (C) 2023-2024  Martijn van der Kleijn
+Copyright (C) 2023-2025  Martijn van der Kleijn
