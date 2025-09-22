@@ -12,126 +12,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Home Dashboard</title>
     <script src="/static/vue.min.js"></script>
-    <style>
-        :root {
-            --clr-dark: #0f172a;
-            --clr-light: #f1f5f9;
-            --clr-accent: #e11d48;
-            --clr-back-grd-top: #87608c;
-            --clr-back-grd-bottom: #b95677;
-            --clr-item-left: #0044aa;
-            --clr-item-right: #222222;
-            --fnt-base: 'Roboto', sans-serif;
-            --clr-item-text: #fff;
-            --clr-item-border: #ccc;
-            --clr-item-shadow: #000;
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html {
-            background-image: linear-gradient(to bottom, var(--clr-back-grd-top), var(--clr-back-grd-bottom));
-            background-attachment: fixed;
-            background-size: cover;
-            display: flex;
-            width: 100%;
-        }
-
-        body {
-            font-family: var(--fnt-base);
-            color: var(--clr-dark);
-            display: flex;
-            flex: 1;
-        }
-
-        #app {
-            display: flex;
-            flex-wrap: wrap;
-            flex: 1;
-            align-items: center;
-            justify-content: center;
-            gap: 2em;
-            padding: 10dvw 0em;
-            height: 100dvh;
-        }
-
-        .item-wrapper {
-            width: 280px;
-            height: 90px;
-            margin: 10px;
-            padding: 0;
-            text-decoration: none;
-            margin-top: auto;
-            margin-bottom: auto;
-        }
-
-        .item {
-            align-items: center;
-            display: flex;
-            padding: 10px;
-            background-clip: padding-box;
-            background: linear-gradient(to right, var(--clr-item-left), var(--clr-item-right));
-            width: 280px;
-            height: 90px;
-            color: var(--clr-item-text);
-            border-radius: 6px;
-            border: 1px solid var(--clr-item-border);
-            box-shadow: 0px 0px 5px var(--clr-item-shadow);
-            outline: 1px solid transparent;
-            position: relative;
-        }
-
-        .logo {
-            height: 68px;
-            width: 68px;
-            padding: 2px;
-            margin-right: 10px;
-        }
-
-        .logo img {
-            width: 64px;
-            height: 64px;
-        }
-
-        .details {
-            width: 100%;
-        }
-
-        .details h2 {
-            margin-bottom: 5px;
-            font-size: 1em;
-        }
-
-        .details p {
-            font-size: 0.8em;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
     <template id="my-component">
-        <a :href="url" class="item-wrapper" target="_blank">
-            <div class="item">
-                <div class="logo">
-                    <img :src="icon">
-                </div>
-                <div class="details">
-                    <h2>{{ name }}</h2>
-                    <p v-if="comment">{{ comment }}</p>
-                </div>
+        <a :href="url" class="app-card" target="_blank">
+            <img :src="icon">
+            <div class="app-text">
+                <h2>{{ name }}</h2>
+                <p v-if="comment">{{ comment }}</p>
             </div>
         </a>
     </template>
 
-    <div id="app">
-        <p v-if="noContainers" style="color: white;">No containers found.</p>
-    </div>
+    <button id="theme-toggle-button">Toggle Theme</button>
+
+    <section class="app-grid">
+        <p v-if="noContainers" style="color: var(--text);">No containers found.</p>
+    </section>
 
     <script>
         Vue.component('my-component', {
@@ -140,7 +39,7 @@
         })
 
         new Vue({
-            el: '#app',
+            el: '#app-grid',
             data: {
                 noContainers: false
             },
@@ -172,6 +71,29 @@
         })
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleButton = document.getElementById('theme-toggle-button');
+            const body = document.body;
+
+            // Check for a saved theme preference (optional, but good for persistence)
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light');
+            }
+
+            themeToggleButton.addEventListener('click', () => {
+                body.classList.toggle('light');
+
+                // Save preference (optional)
+                if (body.classList.contains('light')) {
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
