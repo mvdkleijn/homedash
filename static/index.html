@@ -28,7 +28,7 @@
 
     <button id="theme-toggle-button">Toggle Theme</button>
 
-    <section class="app-grid">
+    <section id="app" class="app-grid">
         <p v-if="noContainers" style="color: var(--text);">No containers found.</p>
     </section>
 
@@ -39,7 +39,7 @@
         })
 
         new Vue({
-            el: '#app-grid',
+            el: '#app',
             data: {
                 noContainers: false
             },
