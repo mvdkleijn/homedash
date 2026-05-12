@@ -1,6 +1,6 @@
 /*
 	HomeDash - A simple, automated dashboard for home labs.
-	Copyright (C) 2023-2024  Martijn van der Kleijn
+	Copyright (C) 2023-2026  Martijn van der Kleijn
 
 	This file is part of HomeDash.
 
@@ -18,139 +18,111 @@ import (
 
 	m "github.com/mvdkleijn/homedash/internal/models"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 type IconIndex map[string]string
 
 type Configuration struct {
-	Global GlobalConfiguration
-	Cors   CorsConfiguration
-	Icons  IconConfiguration
-	Static StaticConfiguration
+	Debug               bool `koanf:"debug"`
+	MaxAgeBeforeCleanup int  `koanf:"maxage"`
+	CleanCheckInterval  int  `koanf:"cleaninterval"`
+
+	Cors   CorsConfiguration   `koanf:"cors"`
+	Icons  IconConfiguration   `koanf:"icons"`
+	Static StaticConfiguration `koanf:"static"`
+	Server ServerConfiguration `koanf:"server"`
 }
 
-// GlobalConfig holds global configuration items
-type GlobalConfiguration struct {
-	Debug               bool
-	ServerAddress       string
-	ServerPort          string
-	MaxAgeBeforeCleanup int
-	CleanCheckInterval  int
+type ServerConfiguration struct {
+	Address string `koanf:"address"`
+	Port    string `koanf:"port"`
 }
 
 type IconConfiguration struct {
-	CacheDir string
-	TmpDir   string
+	CacheDir string `koanf:"cachedir"`
+	TmpDir   string `koanf:"tmpdir"`
 }
 
 type StaticConfiguration struct {
-	Apps []m.ContainerInfo
+	Apps []m.ContainerInfo `koanf:"apps"`
 }
 
 type CorsConfiguration struct {
-	AllowedOrigins   []string
-	AllowCredentials bool
-	AllowedHeaders   []string
-	AllowedMethods   []string
-	Debug            bool
+	AllowedOrigins   []string `koanf:"allowedorigins"`
+	AllowCredentials bool     `koanf:"allowcredentials"`
+	AllowedHeaders   []string `koanf:"allowedheaders"`
+	AllowedMethods   []string `koanf:"allowedmethods"`
+	Debug            bool     `koanf:"debug"`
 }
 
 var (
 	Config Configuration
 	Logger *zerolog.Logger
 	Index  IconIndex = IconIndex{}
+	k                = koanf.New(".")
 )
 
-// TODO: research alternatives to Viper
-func initViper() {
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
+func initConfig() {
 	allowedMethods := []string{"GET", "POST", "HEAD"}
-	viper.SetDefault("server.address", "")
-	viper.SetDefault("server.port", "8080")
-	viper.SetDefault("debug", false)
-	viper.SetDefault("maxAge", "20")
+
+	// Set defaults
+	k.Set("debug", false)
+	k.Set("maxAge", "20")
+	k.Set("checkInterval", "1")
+	k.Set("server.address", "")
+	k.Set("server.port", "8080")
+	k.Set("cors.allowedOrigins", "*")
+	k.Set("cors.allowCredentials", false)
+	k.Set("cors.allowedHeaders", "Content-Type")
+	k.Set("cors.allowedMethods", allowedMethods)
+	k.Set("cors.debug", false)
+	k.Set("apps", []m.ContainerInfo{})
+
 	if isRunningInContainer() {
 		Logger.Debug().Msg("detected that we're runnning in a container, using /homedash as default data directory")
-		viper.SetDefault("icons.tmpDir", "/homedash/tmp")
-		viper.SetDefault("icons.cacheDir", "/homedash/cache")
+		k.Set("icons.tmpDir", "/homedash/tmp")
+		k.Set("icons.cacheDir", "/homedash/cache")
 	} else {
-		viper.SetDefault("icons.tmpDir", "./data/tmp")
-		viper.SetDefault("icons.cacheDir", "./data/cache")
+		k.Set("icons.tmpDir", "./data/tmp")
+		k.Set("icons.cacheDir", "./data/cache")
 	}
-	viper.SetDefault("checkInterval", "1")
-	viper.SetDefault("cors.allowedOrigins", "*")
-	viper.SetDefault("cors.allowCredentials", false)
-	viper.SetDefault("cors.allowedHeaders", "Content-Type")
-	viper.SetDefault("cors.allowedMethods", allowedMethods)
-	viper.SetDefault("cors.debug", false)
-	viper.SetDefault("apps", []m.ContainerInfo{})
 
-	viper.SetEnvPrefix("homedash")
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yml")
-	viper.AddConfigPath(".")
+	// Load Config File
+	configPaths := []string{"."}
 	if isRunningInContainer() {
-		viper.AddConfigPath("/homedash")
+		configPaths = append(configPaths, "/homedash")
 	}
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		Logger.Info().Msg("tried to load configuration file but found none")
-	} else {
-		Logger.Info().Str("configfile", viper.ConfigFileUsed()).Msg("loaded configuration file")
-	}
-
-	viper.AutomaticEnv()
-
-	Config.Global.ServerAddress = viper.GetString("server.address")
-	Config.Global.ServerPort = viper.GetString("server.port")
-	Config.Global.Debug = viper.GetBool("debug")
-	Config.Global.MaxAgeBeforeCleanup = viper.GetInt("maxAge")
-	Config.Global.CleanCheckInterval = viper.GetInt("checkInterval")
-	Config.Icons.TmpDir = viper.GetString("icons.tmpDir")
-	Config.Icons.CacheDir = viper.GetString("icons.cacheDir")
-	Config.Cors.AllowedOrigins = viper.GetStringSlice("cors.allowedOrigins")
-	Config.Cors.AllowCredentials = viper.GetBool("cors.allowCredentials")
-	Config.Cors.AllowedHeaders = viper.GetStringSlice("cors.allowedHeaders")
-	Config.Cors.AllowedMethods = viper.GetStringSlice("cors.allowedMethods")
-	Config.Cors.Debug = viper.GetBool("cors.debug")
-
-	var appInfos []m.ContainerInfo
-	if apps := viper.Get("static.apps"); apps != nil {
-		if appSlice, ok := apps.([]interface{}); ok {
-			appInfos = make([]m.ContainerInfo, len(appSlice))
-			for i, v := range appSlice {
-				if appMap, ok := v.(map[string]interface{}); ok {
-					appInfo := m.ContainerInfo{
-						Name: appMap["name"].(string),
-					}
-					if url, ok := appMap["url"].(string); ok {
-						appInfo.Url = url
-					}
-					if icon, ok := appMap["icon"].(string); ok {
-						appInfo.Icon = icon
-					}
-					if comment, ok := appMap["comment"].(string); ok {
-						appInfo.Comment = comment
-					}
-					appInfo.IconFile = GetIconPath(appInfo.Icon)
-					appInfos[i] = appInfo
-				} else {
-					continue
-				}
-			}
-			Logger.Info().Str("appInfos", fmt.Sprintf("%v", appInfos)).Msg("Loaded static configuration")
+	for _, path := range configPaths {
+		if err := k.Load(file.Provider(path+"/config.yml"), yaml.Parser()); err != nil {
+			Logger.Info().Err(err).Msg("tried to load configuration file but found none or error occurred")
 		} else {
-			Logger.Info().Str("apps", fmt.Sprintf("%v", apps)).Msg("Skipping invalid static configuration")
+			Logger.Info().Str("configfile", path+"/config.yml").Msg("loaded configuration file")
+			break
 		}
 	}
 
-	Config.Static.Apps = appInfos
+	// Load Environment Variables
+	// Replaces DOT with UNDERSCORE (e.g., HOMEDASH_SERVER_PORT)
+	k.Load(env.Provider("HOMEDASH_", ".", func(s string) string {
+		return strings.Replace(strings.ToLower(strings.TrimPrefix(s, "HOMEDASH_")), "_", ".", -1)
+	}), nil)
+
+	// Unmarshal directly into the struct
+	if err := k.Unmarshal("", &Config); err != nil {
+		Logger.Error().Err(err).Msg("failed to unmarshal configuration")
+	}
+
+	// Post-processing:	handle logic that depends on runtime state (like icon paths).
+	UpdateIconPaths()
+
+	log.Debug().Any("config", Config).Msg("debug config system")
 }
 
 func init() {
@@ -158,10 +130,10 @@ func init() {
 	Logger = &log
 
 	log.Info().Msg("initializing system")
-	initViper()
+	initConfig()
 
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if Config.Global.Debug {
+	if Config.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		log.Debug().Msg("enabled DEBUG logging level")
 	}

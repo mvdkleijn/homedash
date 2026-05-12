@@ -1,6 +1,6 @@
 /*
 	HomeDash - A simple, automated dashboard for home labs.
-	Copyright (C) 2023-2024  Martijn van der Kleijn
+	Copyright (C) 2023-2026  Martijn van der Kleijn
 
 	This file is part of HomeDash.
 
@@ -12,11 +12,11 @@
 package models
 
 type ContainerInfo struct {
-	Name     string `json:"name"`
-	Url      string `json:"url"`
-	Icon     string `json:"icon"`
-	IconFile string `json:"iconFile"`
-	Comment  string `json:"comment"`
+	Name     string `json:"name" koanf:"name"`
+	Url      string `json:"url" koanf:"url"`
+	Icon     string `json:"icon" koanf:"icon"`
+	IconFile string `json:"iconFile" koanf:"-"`
+	Comment  string `json:"comment" koanf:"comment"`
 }
 
 type ContainerUpdate struct {

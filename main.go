@@ -87,12 +87,12 @@ func main() {
 	// Check for old data and clean up every X minutes
 	go func() {
 		for {
-			time.Sleep(time.Duration(c.Config.Global.CleanCheckInterval) * time.Minute)
-			routes.DataStore.CleanupOutdatedEntries(c.Config.Global.MaxAgeBeforeCleanup)
+			time.Sleep(time.Duration(c.Config.CleanCheckInterval) * time.Minute)
+			routes.DataStore.CleanupOutdatedEntries(c.Config.MaxAgeBeforeCleanup)
 		}
 	}()
 
-	address := fmt.Sprintf("%s:%s", c.Config.Global.ServerAddress, c.Config.Global.ServerPort)
+	address := fmt.Sprintf("%s:%s", c.Config.Server.Address, c.Config.Server.Port)
 	log.Info().Str("address", address).Msg("starting server")
 	err := http.ListenAndServe(address, r)
 	if err != nil {
