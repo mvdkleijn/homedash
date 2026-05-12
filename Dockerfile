@@ -1,7 +1,7 @@
 ################
 # Build binary #
 ################
-FROM --platform=${BUILDPLATFORM:-linux/arm64} golang:1.26 as builder
+FROM --platform=${BUILDPLATFORM:-linux/arm64} golang:1.26 AS builder
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
