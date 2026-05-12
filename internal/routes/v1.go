@@ -23,8 +23,6 @@ import (
 	c "github.com/mvdkleijn/homedash/internal/config"
 	m "github.com/mvdkleijn/homedash/internal/models"
 	s "github.com/mvdkleijn/homedash/internal/services"
-
-	"github.com/gorilla/mux"
 )
 
 var DataStore = s.DataStore{
@@ -34,14 +32,12 @@ var DataStore = s.DataStore{
 
 type V1 struct{}
 
-func (v *V1) AddRoutes(rg *mux.Router) error {
-	api := rg.PathPrefix("/v1").Subrouter()
-
-	api.HandleFunc("/applications", v.PostApplications).Methods(http.MethodPost)
-	api.HandleFunc("/applications", v.GetApplications).Methods(http.MethodGet)
-	api.HandleFunc("/sidecars", v.GetSidecars).Methods(http.MethodGet)
-	api.HandleFunc("/status", v.GetStatus).Methods(http.MethodGet)
-	api.HandleFunc("/status", v.HeadStatus).Methods(http.MethodHead)
+func (v *V1) AddRoutes(mux *http.ServeMux) error {
+	mux.HandleFunc("POST /api/v1/applications", v.PostApplications)
+	mux.HandleFunc("GET /api/v1/applications", v.GetApplications)
+	mux.HandleFunc("GET /api/v1/sidecars", v.GetSidecars)
+	mux.HandleFunc("GET /api/v1/status", v.GetStatus)
+	mux.HandleFunc("HEAD /api/v1/status", v.HeadStatus)
 
 	return nil
 }
@@ -115,8 +111,14 @@ func (v *V1) PostApplications(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServeIcon(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	filename := vars["filename"]
+	path := r.URL.Path
+	filename := strings.TrimPrefix(path, "/icons/")
+
+	// If the path was just "/icons/", filename will be empty
+	if filename == "" || filename == "/" {
+		http.NotFound(w, r)
+		return
+	}
 
 	// Validate filename to ensure it does not contain any path separators or parent directory references
 	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {

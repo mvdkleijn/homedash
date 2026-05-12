@@ -18,18 +18,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/mvdkleijn/homedash/internal/config"
 	c "github.com/mvdkleijn/homedash/internal/config"
 	"github.com/mvdkleijn/homedash/internal/routes"
-
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 )
 
-//go:embed static/*
+//go:embed static
 var staticFS embed.FS
 
 // LoggingMiddleware is a custom middleware that uses our global Logger
@@ -71,42 +69,69 @@ func (rw *responseWriterInterceptor) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-func main() {
-	config.Setup()
+// SimpleCorsMiddleware replaces github.com/rs/cors
+func SimpleCorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//TODO add check: if allow credentials are true then ensure origin is not *
+		// Set CORS headers based on config
+		w.Header().Set("Access-Control-Allow-Origin", strings.Join(c.Config.Cors.AllowedOrigins, ","))
+		w.Header().Set("Access-Control-Allow-Methods", strings.Join(c.Config.Cors.AllowedMethods, ","))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(c.Config.Cors.AllowedHeaders, ","))
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		w.Header().Set("Access-Control-Allow-Credentials", strconv.FormatBool(c.Config.Cors.AllowCredentials))
 
-	r := mux.NewRouter()
+		//TODO make this settable?
+		maxAge := uint(12 * time.Hour / time.Second)
+		w.Header().Set("Access-Control-Max-Age", strconv.FormatUint(uint64(maxAge), 10))
 
-	// Panic recovery
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func() {
-				if err := recover(); err != nil {
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				}
-			}()
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
-			next.ServeHTTP(w, r)
-		})
+		next.ServeHTTP(w, r)
 	})
+}
 
-	r.Use(LoggingMiddleware)
-	r.Use(cors.New(cors.Options{
-		AllowedOrigins:   c.Config.Cors.AllowedOrigins,
-		AllowedMethods:   c.Config.Cors.AllowedMethods,
-		AllowedHeaders:   c.Config.Cors.AllowedHeaders,
-		ExposedHeaders:   []string{"Content-Length"},
-		AllowCredentials: c.Config.Cors.AllowCredentials,
-		MaxAge:           int(time.Duration.Seconds(12 * time.Hour)),
-	}).Handler)
+// RecoveryMiddleware replaces the r.Use(func...) logic
+func RecoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				c.Logger.Error().Err(fmt.Errorf("%v", err)).Msg("panic recovered")
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
 
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/", http.FileServer(http.FS(staticFS))))
+func main() {
+	c.Setup()
 
-	api := r.PathPrefix("/api").Subrouter()
+	// Create the base mux
+	mux := http.NewServeMux()
+
+	// Define the API routes (v1)
 	v1 := &routes.V1{}
-	v1.AddRoutes(api)
+	// We pass the mux itself, and V1 will register routes with "GET /v1/..."
+	if err := v1.AddRoutes(mux); err != nil {
+		c.Logger.Fatal().Err(err).Msg("failed to initialize routes")
+	}
 
-	r.HandleFunc("/icons/{filename}", routes.ServeIcon).Methods("GET")
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Define Static Assets
+	fileServer := http.FileServer(http.FS(staticFS))
+	mux.Handle("GET /static/", fileServer)
+
+	// Define Icon route
+	mux.HandleFunc("GET /icons/{filename}", routes.ServeIcon)
+
+	// Define Index route
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
 		indexHtml, err := staticFS.ReadFile("static/index.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -114,6 +139,13 @@ func main() {
 		}
 		w.Write(indexHtml)
 	})
+
+	// Wrap the entire mux with Middleware (The "Chain")
+	// The order is: Recovery -> Logging -> CORS -> Mux
+	var handler http.Handler = mux
+	handler = SimpleCorsMiddleware(handler)
+	handler = LoggingMiddleware(handler)
+	handler = RecoveryMiddleware(handler)
 
 	// Check for old data and clean up every X minutes
 	go func() {
@@ -128,7 +160,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    address,
-		Handler: r,
+		Handler: handler,
 	}
 
 	// Channel to listen for interrupt signals (SIGINT, SIGTERM)
@@ -138,21 +170,21 @@ func main() {
 	// Run server in a goroutine so it doesn't block
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			config.Logger.Fatal().Err(err).Msg("error trying to serve data")
+			c.Logger.Fatal().Err(err).Msg("error trying to serve data")
 		}
 	}()
 
 	// Wait for interrupt signal
 	<-quit
-	config.Logger.Info().Msg("shutting down server...")
+	c.Logger.Info().Msg("shutting down server...")
 
 	// Create a context with a timeout for the shutdown process
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		config.Logger.Fatal().Err(err).Msg("server forced to shutdown")
+		c.Logger.Fatal().Err(err).Msg("server forced to shutdown")
 	}
 
-	config.Logger.Info().Msg("server exiting")
+	c.Logger.Info().Msg("server exiting")
 }
