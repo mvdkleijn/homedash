@@ -127,9 +127,11 @@ func initConfig() {
 func init() {
 	// TODO: check an ENV var to decide whether to use human readable or default JSON.
 	// Create the ConsoleWriter for human-readable output
+	zerolog.TimeFieldFormat = "15:04:05.000"
+
 	output := zerolog.ConsoleWriter{
 		Out:        os.Stderr,
-		TimeFormat: "15:04:05",
+		TimeFormat: "15:04:05.000",
 		NoColor:    true,
 	}
 
