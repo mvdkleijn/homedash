@@ -9,7 +9,7 @@ It provides a REST API endpoint that allows you to add applications to the dashb
 
 Features include:
 
-- Single, statically compiled binary
+- Single, lightweight, statically compiled binary
 - Basic UI for dashboard based on plain HTML, CSS and a sprinkling of VueJS
 - Automated, regular removal/refresh of entries older that X minutes
 - Configuration through environment variables or config.yml file
@@ -90,4 +90,4 @@ Source code and issues: https://github.com/mvdkleijn/homedash
 HomeDash is made available under the [MPL-2.0](https://choosealicense.com/licenses/mpl-2.0/)
 license. The full details are available from the [LICENSE](/LICENSE) file.
 
-Copyright (C) 2023-2025  Martijn van der Kleijn
+Copyright (C) 2023-2026  Martijn van der Kleijn
