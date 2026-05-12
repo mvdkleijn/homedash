@@ -15,34 +15,59 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/mvdkleijn/homedash/internal/config"
 	c "github.com/mvdkleijn/homedash/internal/config"
 	"github.com/mvdkleijn/homedash/internal/routes"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"github.com/rs/zerolog"
 )
 
 //go:embed static/*
 var staticFS embed.FS
 
-// Logger is a middleware function that logs each request to the given Logrus logger instance
-func Logger(logger *zerolog.Logger) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger.Info().Str("remoteaddr", r.RemoteAddr).Str("protocol", r.Proto).Str("method", r.Method).Str("url", r.URL.String()).Msg("request received")
+// LoggingMiddleware is a custom middleware that uses our global Logger
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 
-			next.ServeHTTP(w, r)
-		})
-	}
+		// We use a custom ResponseWriter to "intercept" the status code
+		// so we can log it. Standard http.ResponseWriter doesn't let us see it.
+		wrappedWriter := &responseWriterInterceptor{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		// Call the next handler in the chain
+		next.ServeHTTP(wrappedWriter, r)
+
+		// After the request is finished, log the details using our global Logger
+		duration := time.Since(start)
+
+		config.Logger.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Int("status", wrappedWriter.statusCode).
+			Dur("duration", duration).
+			Str("remote_addr", r.RemoteAddr).
+			Msg("request processed")
+	})
+}
+
+// responseWriterInterceptor is a helper to capture the HTTP status code
+type responseWriterInterceptor struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriterInterceptor) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 func main() {
-	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
-
 	r := mux.NewRouter()
 
 	// Panic recovery
@@ -58,7 +83,7 @@ func main() {
 		})
 	})
 
-	r.Use(Logger(&log))
+	r.Use(LoggingMiddleware)
 	r.Use(cors.New(cors.Options{
 		AllowedOrigins:   c.Config.Cors.AllowedOrigins,
 		AllowedMethods:   c.Config.Cors.AllowedMethods,
@@ -93,9 +118,9 @@ func main() {
 	}()
 
 	address := fmt.Sprintf("%s:%s", c.Config.Server.Address, c.Config.Server.Port)
-	log.Info().Str("address", address).Msg("starting server")
+	config.Logger.Info().Str("address", address).Msg("starting server")
 	err := http.ListenAndServe(address, r)
 	if err != nil {
-		log.Debug().Err(err).Msg("error trying to serve data")
+		config.Logger.Debug().Err(err).Msg("error trying to serve data")
 	}
 }

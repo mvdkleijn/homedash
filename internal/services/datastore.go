@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mvdkleijn/homedash/internal/config"
 	m "github.com/mvdkleijn/homedash/internal/models"
 	r "github.com/mvdkleijn/homedash/internal/repositories"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -40,11 +40,11 @@ func (ds *DataStore) CleanupOutdatedEntries(maxAgeInMinutes int) {
 
 	now := time.Now()
 	uuids := maps.Keys(ds.Containers)
-	log.Debug().Msg("cleaning up outdated entries")
+	config.Logger.Debug().Msg("cleaning up outdated entries")
 	for _, uuid := range uuids {
 		// Remove data if no updates in X minutes or more
 		if now.Sub(ds.LastUpdated[uuid]) >= time.Duration(maxAgeInMinutes)*time.Minute {
-			log.Debug().Str("uuid", uuid).Msg("removing entries for sidecar")
+			config.Logger.Debug().Str("uuid", uuid).Msg("removing entries for sidecar")
 			delete(ds.Containers, uuid)
 			delete(ds.LastUpdated, uuid)
 		}

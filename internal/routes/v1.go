@@ -25,7 +25,6 @@ import (
 	s "github.com/mvdkleijn/homedash/internal/services"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog/log"
 )
 
 var DataStore = s.DataStore{
@@ -95,7 +94,7 @@ func (v *V1) PostApplications(w http.ResponseWriter, r *http.Request) {
 
 	if containerUpdate.Uuid == "" {
 		errorMsg := "missing uuid in payload"
-		log.Warn().Str("uuid", errorMsg)
+		c.Logger.Warn().Str("uuid", errorMsg)
 		http.Error(w, errorMsg, http.StatusUnprocessableEntity)
 		return
 	}
@@ -127,7 +126,7 @@ func ServeIcon(w http.ResponseWriter, r *http.Request) {
 
 	filePath := filepath.Join(c.Config.Icons.CacheDir, "icons", filename)
 
-	log.Printf("Serving icon %s", filePath)
+	c.Logger.Debug().Str("filename", filePath).Msg("serving icon")
 
 	if file, err := os.Open(filePath); err == nil {
 		defer file.Close()

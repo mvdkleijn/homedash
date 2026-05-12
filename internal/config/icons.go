@@ -19,8 +19,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/rs/zerolog/log"
 )
 
 type App struct {
@@ -70,7 +68,7 @@ func unzipFile(src, dest string) error {
 
 	for _, file := range reader.File {
 		if strings.Contains(file.Name, "..") {
-			log.Warn().Str("file", file.Name).Msg("skipping file with invalid path")
+			Logger.Warn().Str("file", file.Name).Msg("skipping file with invalid path")
 			continue
 		}
 		path := filepath.Join(dest, file.Name)
@@ -120,25 +118,25 @@ func UpdateIcons(refresh bool) {
 
 	err = downloadFile(zipURL, filepath.Join(Config.Icons.TmpDir, zipFileName))
 	if err != nil {
-		log.Err(err).Msg("failed to download the zip file")
+		Logger.Err(err).Msg("failed to download the zip file")
 		return
 	}
 
 	err = unzipFile(filepath.Join(Config.Icons.TmpDir, zipFileName), Config.Icons.TmpDir)
 	if err != nil {
-		log.Err(err).Msg("failed to unzip the file")
+		Logger.Err(err).Msg("failed to unzip the file")
 		return
 	}
 
 	err = os.Rename(filepath.Join(Config.Icons.TmpDir, "Heimdall-Apps-gh-pages", "icons"), filepath.Join(Config.Icons.CacheDir, "icons"))
 	if err != nil {
-		log.Err(err).Msg("failed to move the icons directory")
+		Logger.Err(err).Msg("failed to move the icons directory")
 		return
 	}
 
 	err = os.Rename(filepath.Join(Config.Icons.TmpDir, "Heimdall-Apps-gh-pages", "list.json"), filepath.Join(Config.Icons.CacheDir, "list.json"))
 	if err != nil {
-		log.Err(err).Msg("failed to move the icons directory")
+		Logger.Err(err).Msg("failed to move the icons directory")
 		return
 	}
 
@@ -146,20 +144,20 @@ func UpdateIcons(refresh bool) {
 
 	os.RemoveAll(Config.Icons.TmpDir)
 
-	log.Info().Msg("Zip file downloaded, unzipped, and icons directory updated successfully.")
+	Logger.Info().Msg("Zip file downloaded, unzipped, and icons directory updated successfully.")
 }
 
 func createIndex() {
 	fileData, err := os.ReadFile(filepath.Join(Config.Icons.CacheDir, "list.json"))
 	if err != nil {
-		log.Err(err).Msg("failed to read JSON file")
+		Logger.Err(err).Msg("failed to read JSON file")
 		return
 	}
 
 	var appList AppList
 	err = json.Unmarshal(fileData, &appList)
 	if err != nil {
-		log.Err(err).Msg("failed to parse JSON file")
+		Logger.Err(err).Msg("failed to parse JSON file")
 		return
 	}
 
@@ -172,32 +170,32 @@ func createIndex() {
 
 	updatedData, err := json.MarshalIndent(appList, "", "  ")
 	if err != nil {
-		log.Err(err).Msg("failed to convert data to JSON")
+		Logger.Err(err).Msg("failed to convert data to JSON")
 		return
 	}
 
 	err = os.WriteFile(filepath.Join(Config.Icons.CacheDir, "applications_index.json"), updatedData, 0644)
 	if err != nil {
-		log.Err(err).Msg("failed to write updated JSON to file")
+		Logger.Err(err).Msg("failed to write updated JSON to file")
 		return
 	}
 
 	os.RemoveAll(filepath.Join(Config.Icons.CacheDir, "list.json"))
 
-	log.Info().Msg("JSON file successfully updated and exported.")
+	Logger.Info().Msg("JSON file successfully updated and exported.")
 }
 
 func createIndexFromCache() {
 	fileData, err := os.ReadFile(filepath.Join(Config.Icons.CacheDir, "applications_index.json"))
 	if err != nil {
-		log.Err(err).Msg("failed to read the JSON file")
+		Logger.Err(err).Msg("failed to read the JSON file")
 		return
 	}
 
 	var appList AppList
 	err = json.Unmarshal(fileData, &appList)
 	if err != nil {
-		log.Err(err).Msg("failed to parse the JSON file")
+		Logger.Err(err).Msg("failed to parse the JSON file")
 		return
 	}
 
@@ -207,5 +205,5 @@ func createIndexFromCache() {
 		Index[app.IconName] = app.Icon
 	}
 
-	log.Info().Msg("successfully read icon index from file.")
+	Logger.Info().Msg("successfully read icon index from file.")
 }

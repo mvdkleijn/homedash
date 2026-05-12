@@ -23,7 +23,6 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type IconIndex map[string]string
@@ -122,26 +121,39 @@ func initConfig() {
 	// Post-processing:	handle logic that depends on runtime state (like icon paths).
 	UpdateIconPaths()
 
-	log.Debug().Any("config", Config).Msg("debug config system")
+	Logger.Debug().Any("config", Config).Msg("debug config system")
 }
 
 func init() {
-	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
+	// TODO: check an ENV var to decide whether to use human readable or default JSON.
+	// Create the ConsoleWriter for human-readable output
+	output := zerolog.ConsoleWriter{
+		Out:        os.Stderr,
+		TimeFormat: "15:04:05",
+		NoColor:    true,
+	}
+
+	// Initialize the GLOBAL Logger with the writer
+	log := zerolog.New(output).With().Timestamp().Logger()
 	Logger = &log
 
-	log.Info().Msg("initializing system")
+	// Set the global logger level
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	Logger.Info().Msg("initializing system")
+
+	// Run config logic
 	initConfig()
 
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	if Config.Debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		log.Debug().Msg("enabled DEBUG logging level")
+		Logger.Debug().Msg("enabled DEBUG logging level")
 	}
 
 	UpdateIcons(false)
 	UpdateIconPaths()
 
-	log.Info().Msg("initialization completed")
+	Logger.Info().Msg("initialization completed")
 	Logger.Debug().Interface("config", Config).Msg("dumping active configuration")
 }
 
@@ -159,11 +171,11 @@ func UpdateIconPaths() {
 }
 
 func GetIconPath(icon string) string {
-	log.Debug().Str("icon", icon).Msg("getting path")
+	Logger.Debug().Str("icon", icon).Msg("getting path")
 	value, exists := Index[icon]
 
 	if !exists {
-		log.Debug().Str("icon", icon).Msg("not found in index")
+		Logger.Debug().Str("icon", icon).Msg("not found in index")
 		return "/static/default-icon.svg"
 	}
 
