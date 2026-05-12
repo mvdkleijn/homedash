@@ -12,9 +12,13 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/mvdkleijn/homedash/internal/config"
@@ -46,7 +50,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		// After the request is finished, log the details using our global Logger
 		duration := time.Since(start)
 
-		config.Logger.Info().
+		c.Logger.Info().
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
 			Int("status", wrappedWriter.statusCode).
@@ -118,9 +122,35 @@ func main() {
 	}()
 
 	address := fmt.Sprintf("%s:%s", c.Config.Server.Address, c.Config.Server.Port)
-	config.Logger.Info().Str("address", address).Msg("starting server")
-	err := http.ListenAndServe(address, r)
-	if err != nil {
-		config.Logger.Debug().Err(err).Msg("error trying to serve data")
+	c.Logger.Info().Str("address", address).Msg("starting server")
+
+	server := &http.Server{
+		Addr:    address,
+		Handler: r,
 	}
+
+	// Channel to listen for interrupt signals (SIGINT, SIGTERM)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Run server in a goroutine so it doesn't block
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			config.Logger.Fatal().Err(err).Msg("error trying to serve data")
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-quit
+	config.Logger.Info().Msg("shutting down server...")
+
+	// Create a context with a timeout for the shutdown process
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		config.Logger.Fatal().Err(err).Msg("server forced to shutdown")
+	}
+
+	config.Logger.Info().Msg("server exiting")
 }
