@@ -72,6 +72,8 @@ func (rw *responseWriterInterceptor) WriteHeader(code int) {
 }
 
 func main() {
+	config.Setup()
+
 	r := mux.NewRouter()
 
 	// Panic recovery

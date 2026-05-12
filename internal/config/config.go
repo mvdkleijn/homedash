@@ -72,8 +72,8 @@ func initConfig() {
 
 	// Set defaults
 	k.Set("debug", false)
-	k.Set("maxAge", "20")
-	k.Set("checkInterval", "1")
+	k.Set("maxAge", 20)
+	k.Set("checkInterval", 1)
 	k.Set("server.address", "")
 	k.Set("server.port", "8080")
 	k.Set("cors.allowedOrigins", "*")
@@ -83,8 +83,8 @@ func initConfig() {
 	k.Set("cors.debug", false)
 	k.Set("apps", []m.ContainerInfo{})
 
-	if isRunningInContainer() {
-		Logger.Debug().Msg("detected that we're runnning in a container, using /homedash as default data directory")
+	if hasContainerDataDir() {
+		Logger.Debug().Msg("detected default /homedash directory, using container-optimized paths")
 		k.Set("icons.tmpDir", "/homedash/tmp")
 		k.Set("icons.cacheDir", "/homedash/cache")
 	} else {
@@ -94,7 +94,7 @@ func initConfig() {
 
 	// Load Config File
 	configPaths := []string{"."}
-	if isRunningInContainer() {
+	if hasContainerDataDir() {
 		configPaths = append(configPaths, "/homedash")
 	}
 
@@ -115,7 +115,7 @@ func initConfig() {
 
 	// Unmarshal directly into the struct
 	if err := k.Unmarshal("", &Config); err != nil {
-		Logger.Error().Err(err).Msg("failed to unmarshal configuration")
+		Logger.Fatal().Err(err).Msg("failed to unmarshal configuration")
 	}
 
 	// Post-processing:	handle logic that depends on runtime state (like icon paths).
@@ -124,7 +124,7 @@ func initConfig() {
 	Logger.Debug().Any("config", Config).Msg("debug config system")
 }
 
-func init() {
+func Setup() {
 	// TODO: check an ENV var to decide whether to use human readable or default JSON.
 	// Create the ConsoleWriter for human-readable output
 	zerolog.TimeFieldFormat = "15:04:05.000"
@@ -159,7 +159,7 @@ func init() {
 	Logger.Debug().Interface("config", Config).Msg("dumping active configuration")
 }
 
-func isRunningInContainer() bool {
+func hasContainerDataDir() bool {
 	if _, err := os.Stat("/homedash"); err != nil {
 		return false
 	}
